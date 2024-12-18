@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phaser.js Fullscreen</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+    /* 버튼 스타일 */
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      font-size: 24px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      background-color: #333;
+      color: white;
+      cursor: pointer;
+    }
+    button:active {
+      background-color: #555;
+    }
+    #fullscreen {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: auto;
+      font-size: 18px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #333;
+      color: white;
+      cursor: pointer;
+    }
+    #fullscreen:active {
+      background-color: #555;
+    }
+  </style>
+</head>
+<body>
+  <!-- 버튼 UI -->
+  <div id="controls">
+    <button id="right">▶</button>
+  </div>
+  <button id="fullscreen">Fullscreen</button>
+
+  <script>
+    const config = {
+      type: Phaser.AUTO,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
+      scene: { preload, create, update }
+    };
+
+    const game = new Phaser.Game(config);
+    let runningCharacter;
+    let cursors;
+    let background;
+
+    const speed = 5; // 캐릭터 이동 속도
+    const frameRate = 8; // 애니메이션 속도
+    const backgroundScrollSpeed = 1.5; // 배경 이동 속도
+
+    function preload() {
+      // 배경 이미지와 캐릭터 스프라이트 시트 로드
+      this.load.image('background', 'assets/background_image.png');
+      this.load.spritesheet('runner', 'assets/running_sprite_sheet.png', { frameWidth: 120, frameHeight: 186 });
+    }
+
+    function create() {
+      // 배경 이미지 추가
+      background = this.add.tileSprite(0, 0, this.scale.width, 1024, 'background').setOrigin(0, 0);
+
+      // 배경 크기 조정
+      background.displayHeight = 1024;
+      background.displayWidth = (background.displayHeight / background.height) * background.width;
+
+      // 캐릭터 애니메이션 설정
+      this.anims.create({
+        key: 'run',
+        frames: this.anims.generateFrameNumbers('runner', { start: 0, end: 2 }),
+        frameRate: frameRate,
+        repeat: -1
+      });
+
+      // 캐릭터 설정
+      runningCharacter = this.physics.add.sprite(100, this.scale.height / 1, 'runner').play('run');
+
+      // 키보드 입력 설정
+      cursors = this.input.keyboard.createCursorKeys();
+
+      // 버튼 이벤트 처리
+      document.getElementById('right').addEventListener('click', () => moveCharacter(speed, 0));
+
+      // 전체 화면 버튼 이벤트
+      document.getElementById('fullscreen').addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.body.requestFullscreen().catch(err => {
+            console.error(`Error attempting fullscreen: ${err.message}`);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      });
+    }
+
+    function update() {
+      // 캐릭터 이동 (키보드 입력)
+      if (cursors.right.isDown) {
+        moveCharacter(speed, 0);
+      }
+      if (cursors.up.isDown) {
+        moveCharacter(0, -speed);
+      }
+
+      // 배경 스크롤 설정
+      background.tilePositionX += backgroundScrollSpeed;
+
+      // 캐릭터가 화면을 벗어나지 않도록 처리
+      if (runningCharacter.x > this.scale.width) {
+        runningCharacter.x = 0; // 화면 왼쪽으로 캐릭터 재배치
+      }
+    }
+
+    // 캐릭터 이동 함수
+    function moveCharacter(dx, dy) {
+      runningCharacter.x += dx;
+      runningCharacter.y += dy;
+    }
+
+    // 화면 크기 조정 대응
+    window.addEventListener('resize', () => {
+      game.scale.resize(window.innerWidth, window.innerHeight);
+
+      // 배경 다시 세팅 (화면 크기 변경 시)
+      background.displayHeight = 1024;
+      background.displayWidth = (background.displayHeight / background.height) * background.width;
+    });
+  </script>
+</body>
+</html>
